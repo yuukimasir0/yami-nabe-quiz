@@ -9,17 +9,22 @@ use rand::prelude::*;
 pub struct Model {
     pub counts: HashMap<String, u32>,
     pub n: HashMap<u32, u32>,
+    pub joshi: HashMap<String, bool>,
     pub total: u32,
-    pub types: u32,
 }
 
 impl Model {
     pub fn new() -> Model {
+        let mut joshi = HashMap::new();
+        let input_str = "の から ぞ ほど ばかり だけ が さ よ ね な を や ろ い ら し か かい かな が な ね とも かも もが の ぞ ぜ や よ さ す のに やら ものか もんか もん わ かしら かし って ってば ば と ても でも けれど けれども が のに ので から し て で なり ながら たり つつ ところで まま ものの や とも ども に を は も こそ でも しか ほか だって ばかり まで だけ さえ ほど くらい ぐらい など なんか なんて なり やら か ぞ し ばし がてら なぞ なんぞ ずつ のみ きり や だに すら の に と や し やら か なり だの とか も が の を に へ と から より で 1 2 3 4 5 6 7 8 9 0";
+        for s in input_str.split_whitespace() {
+            joshi.insert(s.to_string(), true);
+        }
         Model {
             counts: HashMap::new(),
             n: HashMap::new(),
+            joshi,
             total: 0,
-            types: 0,
         }
     }
 
@@ -33,9 +38,6 @@ impl Model {
             let line = line?;
             for word in line.split_whitespace() {
                 let count = self.counts.entry(word.to_string()).or_insert(0);
-                if count == &mut 0 {
-                    self.types += 1;
-                }
                 *self.n.get_mut(count).unwrap() -= 1;
                 *count += 1;
                 *self.n.entry(*count).or_insert(0) += 1;
@@ -44,29 +46,6 @@ impl Model {
         self.total = self.counts.values().sum();
         Ok(())
     }
-
-    // pub fn number_of_type(&self) -> u32 {
-    //     self.types
-    // }
-
-    // pub fn n_one(&self) -> f64 {
-    //     self.n[&1] as f64 / self.types as f64
-    // }
-
-    // pub fn most_frequent_word(map: &'a HashMap<String, u32>) -> Option<(&'a String, &'a u32)> {
-    //     let mut sorted_vec: Vec<(&'a String, &'a u32)> = map.iter().collect();
-    //     sorted_vec.sort_by(|a, b| b.1.cmp(a.1));
-    //     sorted_vec.get(0).cloned()
-    // }
-
-    // pub fn ave_occurrence_count(&self) -> f64 {
-    //     self.total as f64 / self.types as f64
-    // }
-
-    // pub fn prob_ml(&self, word: &str) -> f64 {
-    //     let count = *self.counts.get(word).unwrap_or(&0);
-    //     count as f64 / self.total as f64
-    // }
 
     pub fn prob_ft(&self, word: &str) -> f64 {
         let count = *self.counts.get(word).unwrap_or(&0);
@@ -112,6 +91,7 @@ impl Model {
         let mut last;
         let mut maxidx = 0;
         let mut maxval ;
+        let mut particle = false;
         {
             let first = rng.gen_range(0..quiz.len());
             res.push(quiz[first][0].clone());
@@ -124,6 +104,9 @@ impl Model {
             for i in 0..quiz.len() { 
                 res.push(quiz[i][index[i]].clone());
                 prob[i] = self.calc_perplexity(res, Self::prob_ft);
+                if particle && *self.joshi.get(&quiz[i][index[i]]).unwrap_or(&false) {
+                    prob[i] = 1e100;
+                }
                 if i == last {
                     prob[i] *= p;
                 }
@@ -145,6 +128,7 @@ impl Model {
             } else {
                 last = maxidx;
                 res.push(quiz[last][index[last]].clone());
+                particle = *self.joshi.get(&quiz[last][index[last]]).unwrap_or(&false);
                 index[last] += 1;
             }
             if index[last] == quiz[last].len() {
