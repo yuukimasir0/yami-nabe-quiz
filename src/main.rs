@@ -1,5 +1,5 @@
 mod calcprob;
-mod wakachi;
+// mod wakachi;
 use calcprob::Model;
 use std::io;
 
@@ -18,8 +18,8 @@ fn main() -> io::Result<()> {
     }
     model.generate(&quiz, &mut generated, 1.6);
     for s in generated {
-        print!("{}", s);
+        eprint!("{}", s);
     }
-    println!();
+    eprintln!();
     Ok(())
 }
