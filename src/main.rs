@@ -1,4 +1,5 @@
 mod calcprob;
+mod wakachi;
 use calcprob::Model;
 use std::io;
 

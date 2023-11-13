@@ -2,9 +2,11 @@ use std::{
     collections::HashMap,
     fs::File,
     io::{self, BufRead, BufReader},
+    time,
 };
 
 use rand::prelude::*;
+use rand_pcg::Mcg128Xsl64;
 
 pub struct Model {
     pub counts: HashMap<String, u32>,
@@ -16,7 +18,7 @@ pub struct Model {
 impl Model {
     pub fn new() -> Model {
         let mut joshi = HashMap::new();
-        let input_str = "の から ぞ ほど ばかり だけ が さ よ ね な を や ろ い ら し か かい かな が な ね とも かも もが の ぞ ぜ や よ さ す のに やら ものか もんか もん わ かしら かし って ってば ば と ても でも けれど けれども が のに ので から し て で なり ながら たり つつ ところで まま ものの や とも ども に を は も こそ でも しか ほか だって ばかり まで だけ さえ ほど くらい ぐらい など なんか なんて なり やら か ぞ し ばし がてら なぞ なんぞ ずつ のみ きり や だに すら の に と や し やら か なり だの とか も が の を に へ と から より で 1 2 3 4 5 6 7 8 9 0";
+        let input_str = "の から ぞ ほど ばかり だけ が さ よ ね な を や ろ い ら し か かい かな が な ね とも かも もが の ぞ ぜ や よ さ す のに やら ものか もんか もん わ かしら かし って ってば ば と ても でも けれど けれども が のに ので から し て で なり ながら たり つつ ところで まま ものの や とも ども に を は も こそ でも しか ほか だって ばかり まで だけ さえ ほど くらい ぐらい など なんか なんて なり やら か ぞ し ばし がてら なぞ なんぞ ずつ のみ きり や だに すら の に と や し やら か なり だの とか も が の を に へ と から より で";
         for s in input_str.split_whitespace() {
             joshi.insert(s.to_string(), true);
         }
@@ -84,56 +86,82 @@ impl Model {
     }
 
     pub fn generate(&self, quiz: &[Vec<String>], res: &mut Vec<String>, p: f64){
-        // let mut res = Vec::new();
-        let mut rng = rand_pcg::Pcg64Mcg::new(42);
-        let mut index = vec![0_usize; quiz.len()];
-        let mut prob = vec![0.; quiz.len()];
-        let mut last;
-        let mut maxidx = 0;
-        let mut maxval ;
-        let mut particle = false;
-        {
-            let first = rng.gen_range(0..quiz.len());
-            res.push(quiz[first][0].clone());
-            index[first] += 1;
-            last = first;
+        let mut rng = rand_pcg::Pcg64Mcg::new(time::Instant::now().elapsed().as_nanos());
+        let mut gen_str = vec![Vec::new(); 20];
+        for (eb, s) in gen_str.iter_mut().enumerate() {
+            self.internal_gen(quiz, p, &mut rng, s, eb)
         }
-        'main: 
-        loop {
-            maxval = 1e99;
-            for i in 0..quiz.len() { 
-                res.push(quiz[i][index[i]].clone());
-                prob[i] = self.calc_perplexity(res, Self::prob_ft);
-                if particle && *self.joshi.get(&quiz[i][index[i]]).unwrap_or(&false) {
-                    prob[i] = 1e100;
-                }
-                if i == last {
-                    prob[i] *= p;
-                }
-                if prob[i] < maxval {
-                    maxval = prob[i];
-                    maxidx = i;
-                }
-                res.pop();
+        let mut minp = 1e100;
+        let mut mins = vec![String::new()];
+        for s in gen_str {
+            let p = self.calc_perplexity(&s,Self::prob_ft);
+            if minp > p {
+                minp = p;
+                mins = s;
             }
-            // eprintln!("{:?}", prob);
-            let branch = rng.gen_range(0..10);
-           if branch == 9 {
-                for (i, idx) in index.iter_mut().enumerate() {
-                    *idx += 1;
-                    if *idx == quiz[i].len() {
-                        break 'main;
+        }
+        for s in mins {
+            res.push(s);
+        }
+    }
+
+    fn internal_gen(&self, quiz: &[Vec<String>], p: f64, rng: &mut Mcg128Xsl64, gen_str: &mut Vec<String>, eb: usize) {
+        let mut temp_str = vec![Vec::new(); 20];
+        for s in temp_str.iter_mut() {
+            let mut index = vec![0_usize; quiz.len()];
+            let mut prob = vec![0.; quiz.len()];
+            let mut last;
+            let mut maxidx = 0;
+            let mut maxval ;
+            let mut particle = false;
+            {
+                let first = rng.gen_range(0..quiz.len());
+                s.push(quiz[first][0].clone());
+                index[first] += 1;
+                last = first;
+            }
+            loop {
+                maxval = 1e99;
+                for i in 0..quiz.len() { 
+                    s.push(quiz[i][index[i]].clone());
+                    prob[i] = self.calc_perplexity(s, Self::prob_ft) + rng.gen_range(0. ..20.);
+                    if particle && *self.joshi.get(&quiz[i][index[i]]).unwrap_or(&false) {
+                        prob[i] = 1e100;
                     }
+                    if i == last {
+                        prob[i] *= p;
+                    }
+                    if prob[i] < maxval {
+                        maxval = prob[i];
+                        maxidx = i;
+                    }
+                    s.pop();
                 }
-            } else {
-                last = maxidx;
-                res.push(quiz[last][index[last]].clone());
-                particle = *self.joshi.get(&quiz[last][index[last]]).unwrap_or(&false);
-                index[last] += 1;
+                let branch = rng.gen_range(0..20);
+                if branch == eb {
+                    index[last] += 1;
+                } else {
+                    last = maxidx;
+                    s.push(quiz[last][index[last]].clone());
+                    particle = *self.joshi.get(&quiz[last][index[last]]).unwrap_or(&false);
+                    index[last] += 1;
+                }
+                if index[last] == quiz[last].len() {
+                    break;
+                }
             }
-            if index[last] == quiz[last].len() {
-                break;
+        }
+        let mut minp = 1e100;
+        let mut mins = vec![String::new()];
+        for s in temp_str {
+            let p = self.calc_perplexity(&s,Self::prob_ft);
+            if minp > p {
+                minp = p;
+                mins = s;
             }
+        }
+        for s in mins {
+            gen_str.push(s);
         }
     }
 }
