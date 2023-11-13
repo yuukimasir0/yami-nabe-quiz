@@ -322,7 +322,7 @@ impl Model {
                             }
                         }
                         None => {
-                            // idx.push((1, i, j));
+                            // idx.push((1, i, j)); 
                         },
                     }
                 }
