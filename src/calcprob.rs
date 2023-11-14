@@ -307,8 +307,8 @@ impl Model {
         }
         loop {
             for (i, quiz) in quiz.iter().enumerate() {
-                for j in 0..3 {
-                    if index[i] + j == quiz.len() {
+                for j in 0..1 {
+                    if index[i] + j >= quiz.len() {
                         break;
                     }
                     match self.transition_rule.get(prev) {
@@ -339,5 +339,22 @@ impl Model {
                 break;
             }
         }
+    }
+
+    pub fn main(&mut self) -> String {
+        self.make("static/corpus.txt").unwrap();
+        // eprintln!("The corpus has been loaded");
+        let mut quiz = Vec::new();
+        let mut generated = Vec::new();
+        let input = io::stdin().lines();
+        for (i, line) in input.into_iter().enumerate() {
+            quiz.push(Vec::new());
+            let line = line.unwrap();
+            for s in line.split_whitespace() {
+                quiz[i].push(s.to_string());
+            }
+        }
+        self.generate(&quiz, &mut generated, 1.6);
+        generated.join(" ")
     }
 }
