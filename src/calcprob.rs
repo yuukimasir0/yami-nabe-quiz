@@ -1,5 +1,6 @@
 use std::{
-    collections::HashMap,
+    cmp::min,
+    collections::{HashMap, BTreeSet},
     fs::File,
     io::{self, BufRead, BufReader},
     time,
@@ -50,6 +51,18 @@ impl Model {
         }
     }
 
+    #[inline(always)]
+    fn set_pos(&mut self, word: &str, prev: &mut PartOfSpeech, nxt: &PartOfSpeech) {
+        self.pos.insert(word.to_string(), *nxt);
+        self.transition_rule
+            .entry(*prev)
+            .or_insert(HashMap::new())
+            .entry(*nxt)
+            .and_modify(|c| *c += 1)
+            .or_insert(1);
+        *prev = *nxt;
+    }
+
     pub fn make(&mut self, filename: &str) -> io::Result<()> {
         let file = File::open(filename)?;
         let reader = BufReader::new(file);
@@ -67,183 +80,24 @@ impl Model {
                     *self.n.entry(*count).or_insert(0) += 1;
                     if !self.pos.contains_key(*word) {
                         match *pos {
-                            "動詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Verb);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Verb)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Verb;
-                            }
-                            "形容詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Adjective);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Adjective)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Adjective;
-                            }
-                            "形容動詞" => {
-                                self.pos
-                                    .insert(word.to_string(), PartOfSpeech::AdjectivalNoun);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::AdjectivalNoun)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::AdjectivalNoun;
-                            }
-                            "名詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Noun);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Noun)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Noun;
-                            }
-                            "副詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Adverb);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Adverb)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Adverb;
-                            }
-                            "連体詞" => {
-                                self.pos
-                                    .insert(word.to_string(), PartOfSpeech::PreNounAdjective);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::PreNounAdjective)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::PreNounAdjective;
-                            }
-                            "接続詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Conjunction);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Conjunction)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Conjunction;
-                            }
-                            "感動詞" => {
-                                self.pos
-                                    .insert(word.to_string(), PartOfSpeech::Interjection);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Interjection)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Interjection;
-                            }
-                            "助動詞" => {
-                                self.pos
-                                    .insert(word.to_string(), PartOfSpeech::AuxiliaryVerb);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::AuxiliaryVerb)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::AuxiliaryVerb;
-                            }
-                            "助詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Particle);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Particle)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Particle;
-                            }
-                            "補助記号" => {
-                                self.pos
-                                    .insert(word.to_string(), PartOfSpeech::AuxiliarySymbol);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::AuxiliarySymbol)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::AuxiliarySymbol;
-                            }
-                            "終端記号" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::End);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::End)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::End;
-                            }
-                            "代名詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Pronoun);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Pronoun)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Pronoun;
-                            }
-                            "接尾辞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Suffix);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Suffix)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Suffix;
-                            }
-                            "接頭辞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Prefix);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Prefix)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Prefix;
-                            }
-                            "形状詞" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Determiner);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Determiner)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Determiner;
-                            }
-                            "記号" => {
-                                self.pos.insert(word.to_string(), PartOfSpeech::Symbol);
-                                self.transition_rule
-                                    .entry(prev)
-                                    .or_insert(HashMap::new())
-                                    .entry(PartOfSpeech::Symbol)
-                                    .and_modify(|c| *c += 1)
-                                    .or_insert(1);
-                                prev = PartOfSpeech::Symbol;
-                            }
-                            _ => {
-                            }
+                            "動詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Verb),
+                            "形容詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Adjective),
+                            "形容動詞" => self.set_pos(word, &mut prev, &PartOfSpeech::AdjectivalNoun),
+                            "名詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Noun),
+                            "副詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Adverb),
+                            "連体詞" => self.set_pos(word, &mut prev, &PartOfSpeech::PreNounAdjective),
+                            "接続詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Conjunction),
+                            "感動詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Interjection),
+                            "助動詞" => self.set_pos(word, &mut prev, &PartOfSpeech::AuxiliaryVerb),
+                            "助詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Particle),
+                            "補助記号" => self.set_pos(word, &mut prev, &PartOfSpeech::AuxiliarySymbol),
+                            "終端記号" => self.set_pos(word, &mut prev, &PartOfSpeech::End),
+                            "代名詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Pronoun),
+                            "接尾辞" => self.set_pos(word, &mut prev, &PartOfSpeech::Suffix),
+                            "接頭辞" => self.set_pos(word, &mut prev, &PartOfSpeech::Prefix),
+                            "形状詞" => self.set_pos(word, &mut prev, &PartOfSpeech::Determiner),
+                            "記号" => self.set_pos(word, &mut prev, &PartOfSpeech::Symbol),
+                            _ => ()
                         };
                     }
                 }
@@ -292,7 +146,6 @@ impl Model {
     pub fn generate(&self, quiz: &[Vec<String>], res: &mut Vec<String>, p: f64) {
         let mut rng = rand_pcg::Pcg64Mcg::new(time::Instant::now().elapsed().as_nanos());
         let mut index = vec![0_usize; quiz.len()];
-        let mut last;
         let mut idx = Vec::new();
         let mut prev;
         {
@@ -303,12 +156,11 @@ impl Model {
                 .get(&quiz[first][0])
                 .unwrap_or(&PartOfSpeech::Unknown);
             index[first] += 1;
-            last = first;
         }
         loop {
             for (i, quiz) in quiz.iter().enumerate() {
                 for j in 0..3 {
-                    if index[i] + j == quiz.len() {
+                    if index[i] + j >= quiz.len() {
                         break;
                     }
                     match self.transition_rule.get(prev) {
@@ -322,22 +174,93 @@ impl Model {
                             }
                         }
                         None => {
-                            // idx.push((1, i, j)); 
-                        },
+                            // idx.push((1, i, j));
+                        }
                     }
                 }
+                idx.push((0, i, 0));
             } //分岐候補の生成
             let id = rng.gen_range(0..idx.len());
-            last = idx[id].1;
-            res.push(quiz[last][index[last] + idx[id].2].clone());
-            prev = self
-                .pos
-                .get(&quiz[last][index[last] + idx[id].2])
-                .unwrap_or(&PartOfSpeech::Unknown);
-            index[last] += idx[id].2 + 1;
-            if index[last] == quiz[last].len() {
+            let nxt = idx[id].1;
+            if idx[id].0 == 0 && idx[id].2 == 0 {
+                index[nxt] += 1;
+            } else {
+                res.push(quiz[nxt][index[nxt] + idx[id].2].clone());
+                prev = self
+                    .pos
+                    .get(&quiz[nxt][index[nxt] + idx[id].2])
+                    .unwrap_or(&PartOfSpeech::Unknown);
+                index[nxt] += idx[id].2 + 1;
+            }
+            if index[nxt] >= quiz[nxt].len() {
                 break;
             }
         }
+    }
+
+    pub fn test_gen(&self, quiz: &[Vec<String>], res: &mut Vec<String>, p: f64) {
+        let mut rng = rand_pcg::Pcg64Mcg::new(time::Instant::now().elapsed().as_nanos());
+        let now = time::Instant::now();
+        let mut idx = BTreeSet::new();
+        let three_secs = time::Duration::from_secs(1);
+        while now.elapsed() < three_secs {
+            //3秒実行
+            idx.insert(self.internal_gen(quiz, &mut rng));
+        }
+        for (i, idx) in idx.iter().enumerate() {
+            println!(r#"{}: len = [{}] str = "{}""#,i, idx.len(), self.make_str(idx, quiz));
+        }
+    }
+
+    fn internal_gen(&self, quiz: &[Vec<String>], rng: &mut Mcg128Xsl64) -> Vec<(usize, usize)> {
+        'gen: loop {
+            let mut index = vec![0_usize; quiz.len()];
+            let mut res_idx = Vec::new();
+            {
+                let first = rng.gen_range(0..quiz.len());
+                res_idx.push((first, 0));
+                index[first] += 1;
+            }
+            loop {
+                let nxt = rng.gen_range(0..index.len());
+                if quiz[nxt].len() - index[nxt] < 2 {
+                    res_idx.push((nxt, index[nxt]));
+                    if res_idx.len() > 50 {
+                      return res_idx;
+                    } else {
+                        continue 'gen;
+                    }
+                }
+                let idx = rng.gen_range(1..min(3, quiz[nxt].len() - index[nxt]));
+                index[nxt] += idx;
+                res_idx.push((nxt, index[nxt]));
+            }
+        }
+    }
+
+    fn make_str(&self, idx: &[(usize, usize)], quiz: &[Vec<String>]) -> String {
+        let mut s = String::new();
+        for &(i, j) in idx.iter() {
+            s.push_str(&quiz[i][j]);
+        }
+        s
+    }
+
+    pub fn main(&mut self) -> String {
+        self.make("static/corpus.txt").unwrap();
+        // eprintln!("The corpus has been loaded");
+        let mut quiz = Vec::new();
+        let mut generated = Vec::new();
+        let input = io::stdin().lines();
+        for (i, line) in input.into_iter().enumerate() {
+            quiz.push(Vec::new());
+            let line = line.unwrap();
+            for s in line.split_whitespace() {
+                quiz[i].push(s.to_string());
+            }
+            quiz[i].pop();
+        }
+        self.test_gen(&quiz, &mut generated, 1.6);
+        generated.join("")
     }
 }
