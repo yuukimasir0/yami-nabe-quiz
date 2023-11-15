@@ -10,3 +10,5 @@ rand = "0.8.5"
 rand_pcg = "0.3.1"
 vibrato = "0.5.1"
 zstd = "0.13.0"
+rocket = { version="0.5.0-rc.1", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
