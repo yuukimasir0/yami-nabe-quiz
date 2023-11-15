@@ -674,6 +674,7 @@ dependencies = [
 name = "language_processing"
 version = "0.1.0"
 dependencies = [
+ "once_cell",
  "rand",
  "rand_pcg",
  "rocket",

@@ -141,7 +141,6 @@ impl Model {
     }
 
     pub fn main(&mut self, quiz: &[Vec<String>]) -> String {
-        self.make("static/corpus.txt").unwrap();
         let mut generated = Vec::new();
         self.generate(quiz, &mut generated);
         generated.join("")
