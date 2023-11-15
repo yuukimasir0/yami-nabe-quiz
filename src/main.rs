@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 #[macro_use]
 extern crate rocket;
 
@@ -79,13 +78,3 @@ async fn main() {
         .await
         .unwrap();
 }
-=======
-mod calcprob;
-use calcprob::Model;
-
-fn main() {
-    let mut model = Model::new();
-    let s = model.main();
-    print!("{}", s);
-}
->>>>>>> master
