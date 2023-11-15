@@ -1,0 +1,7 @@
+#cargoで生成されるディレクトリ
+debug/
+target/
+
+#辞書データ
+ipadic-mecab-2_7_0/
+ipadic-mecab-2_7_0.tar.xz
