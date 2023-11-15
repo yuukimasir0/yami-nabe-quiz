@@ -56,15 +56,9 @@ fn generate(request: Json<GenReq>) -> Json<GenRes> {
         })
         .collect::<Vec<Vec<String>>>();
 
-    let mut generated = Vec::new();
-
-    let mut model = calcprob::Model::new();
-    model.make("static/corpus.txt").unwrap();
-    model.test_gen(&quiz, &mut generated, 1.6);
-
     let response = GenRes {
         // ここにレスポンスのデータを設定
-        result: generated.join(""),
+        result: calcprob::Model::new().main(&quiz),
     };
 
     Json(response)
