@@ -11,7 +11,7 @@ use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
 use once_cell::sync::Lazy;
 
-static model: Lazy<Mutex<Model>> = Lazy::new(|| Mutex::new(Model::new()));
+static MODEL: Lazy<Mutex<Model>> = Lazy::new(|| Mutex::new(Model::new()));
 
 // APIで受け取るデータの形式と返すデータの形式を規定
 #[derive(Debug, Serialize, Deserialize)]
@@ -64,7 +64,7 @@ fn generate(request: Json<GenReq>) -> Json<GenRes> {
 
     let response = GenRes {
         // ここにレスポンスのデータを設定
-        result: model.lock().unwrap().main(&quiz),
+        result: MODEL.lock().unwrap().main(&quiz),
     };
 
     Json(response)
@@ -72,7 +72,7 @@ fn generate(request: Json<GenReq>) -> Json<GenRes> {
 
 #[rocket::main]
 async fn main() {
-    let _ = model.lock().unwrap().make("static/corpus.txt");
+    let _ = MODEL.lock().unwrap().make("static/corpus.txt");
     rocket::build()
         .mount("/", routes![your_handler, generate])
         .launch()
