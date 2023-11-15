@@ -60,7 +60,7 @@ fn generate(request: Json<GenReq>) -> Json<GenRes> {
 
     let mut model = calcprob::Model::new();
     model.make("static/corpus.txt").unwrap();
-    model.generate(&quiz, &mut generated, 1.6);
+    model.test_gen(&quiz, &mut generated, 1.6);
 
     let response = GenRes {
         // ここにレスポンスのデータを設定

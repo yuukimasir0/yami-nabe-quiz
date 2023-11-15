@@ -1,6 +1,6 @@
 use std::{
     cmp::min,
-    collections::{HashMap, BTreeSet},
+    collections::{HashMap, BTreeSet, BTreeMap},
     fs::File,
     io::{self, BufRead, BufReader},
     time,
@@ -201,14 +201,16 @@ impl Model {
     pub fn test_gen(&self, quiz: &[Vec<String>], res: &mut Vec<String>, p: f64) {
         let mut rng = rand_pcg::Pcg64Mcg::new(time::Instant::now().elapsed().as_nanos());
         let now = time::Instant::now();
-        let mut idx = BTreeSet::new();
-        let three_secs = time::Duration::from_secs(1);
-        while now.elapsed() < three_secs {
-            //3秒実行
-            idx.insert(self.internal_gen(quiz, &mut rng));
+        let mut idx = BTreeMap::new();
+        let limit_times = time::Duration::from_secs(3);
+        let mut num = 0;
+        while now.elapsed() < limit_times && idx.len() <= 300000 {
+            idx.insert(num, self.internal_gen(quiz, &mut rng));
+            num += 1;
         }
-        for (i, idx) in idx.iter().enumerate() {
-            println!(r#"{}: len = [{}] str = "{}""#,i, idx.len(), self.make_str(idx, quiz));
+        let i = &rng.gen_range(0..idx.len());
+        for &(i, j) in &idx[i] {
+            res.push(quiz[i][j].clone());
         }
     }
 
@@ -216,15 +218,23 @@ impl Model {
         'gen: loop {
             let mut index = vec![0_usize; quiz.len()];
             let mut res_idx = Vec::new();
+            let mut num = vec![0_usize; quiz.len()];
             {
                 let first = rng.gen_range(0..quiz.len());
                 res_idx.push((first, 0));
                 index[first] += 1;
+                num[first] += 1;
             }
             loop {
                 let nxt = rng.gen_range(0..index.len());
-                if quiz[nxt].len() - index[nxt] < 2 {
+                if quiz[nxt].len() - index[nxt] < 3 {
                     res_idx.push((nxt, index[nxt]));
+                    num[nxt] += 1;
+                    for x in num {
+                        if x < 10 {
+                            continue 'gen;
+                        }
+                    }
                     if res_idx.len() > 50 {
                       return res_idx;
                     } else {
@@ -233,6 +243,7 @@ impl Model {
                 }
                 let idx = rng.gen_range(1..min(3, quiz[nxt].len() - index[nxt]));
                 index[nxt] += idx;
+                num[nxt] += 1;
                 res_idx.push((nxt, index[nxt]));
             }
         }

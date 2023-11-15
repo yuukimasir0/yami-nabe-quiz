@@ -31,7 +31,7 @@ pub fn wakachi(text: &str) -> String {
 
     let res = worker.token_iter()
         .map(|t| { // 出力
-            format!("{}", t.surface())
+            t.surface().to_string()
         }).collect::<Vec<_>>().join(" ");
     
     res
