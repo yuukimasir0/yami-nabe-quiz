@@ -1,0 +1,7 @@
+# 分かち書きテスト
+POST http://localhost:8000/wakachi
+Content-Type: application/json
+
+{
+    "text": "今日はいい天気ですね"
+}
