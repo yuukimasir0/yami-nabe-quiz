@@ -7,9 +7,9 @@ mod wakachi;
 use std::sync::Mutex;
 
 use calcprob::Model;
+use once_cell::sync::Lazy;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
-use once_cell::sync::Lazy;
 
 static MODEL: Lazy<Mutex<Model>> = Lazy::new(|| Mutex::new(Model::new()));
 
@@ -55,12 +55,8 @@ fn generate(request: Json<GenReq>) -> Json<GenRes> {
     let quiz = request
         .questions
         .iter()
-        .map(|q| {
-            q.split_whitespace()
-                .map(String::from)
-                .collect::<Vec<String>>()
-        })
-        .collect::<Vec<Vec<String>>>();
+        .map(|q| q.split_whitespace().map(String::from).collect())
+        .collect::<Vec<_>>();
 
     let response = GenRes {
         // ここにレスポンスのデータを設定

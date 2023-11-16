@@ -84,50 +84,53 @@ impl Model {
     pub fn generate(&self, quiz: &[Vec<String>], res: &mut Vec<String>) {
         let mut rng = rand_pcg::Pcg64Mcg::new(time::Instant::now().elapsed().as_nanos());
         let now = time::Instant::now();
-        let mut idx = Vec::new();
+        let mut fvst = Vec::new();
         let limit_times = time::Duration::from_secs(3);
+        let under_qoi = quiz.iter().map(|x| x.len()).sum::<usize>() / quiz.len() / 3;
+        eprintln!("{}", under_qoi);
         while now.elapsed() < limit_times {
-            idx.push(self.internal_gen(quiz, &mut rng));
+            fvst.push(self.internal_gen(quiz, &mut rng, under_qoi));
         }
-        idx.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
-        for s in &idx[0].1 {    
+        fvst.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        for s in &fvst[0].1 {    
             res.push(s.clone());
         }
     }
 
-    fn internal_gen(&self, quiz: &[Vec<String>], rng: &mut Mcg128Xsl64) -> (f64, Vec<String>) {
+    #[inline]
+    fn internal_gen(&self, quiz: &[Vec<String>], rng: &mut Mcg128Xsl64, under_qoi: usize) -> (f64, Vec<String>) {
         'gen: loop {
             let mut index = vec![0_usize; quiz.len()];
-            let mut res_idx = Vec::new();
+            let mut idx = Vec::new();
             let mut num = vec![0_usize; quiz.len()];
             {
                 let first = rng.gen_range(0..quiz.len());
-                res_idx.push((first, 0));
+                idx.push((first, 0));
                 index[first] += 1;
                 num[first] += 1;
             }
             loop {
                 let nxt = rng.gen_range(0..index.len());
                 if quiz[nxt].len() - index[nxt] < 3 {
-                    res_idx.push((nxt, index[nxt]));
+                    idx.push((nxt, index[nxt]));
                     num[nxt] += 1;
                     for x in num {
-                        if x < 10 {
+                        if x < under_qoi {
                             continue 'gen;
                         }
                     }
-                    if res_idx.len() > 50 {
-                        let s = self.make_str(&res_idx, quiz);
+                    if idx.len() > under_qoi * (quiz.len() + 2) {
+                        let s = self.make_str(&idx, quiz);
                         let p = self.calc_perplexity(&s, Self::prob_ft);
-                      return (p, s);
+                        return (p, s);
                     } else {
                         continue 'gen;
                     }
                 }
-                let idx = rng.gen_range(1..min(3, quiz[nxt].len() - index[nxt]));
-                index[nxt] += idx;
+                let idx_add = rng.gen_range(1..min(3, quiz[nxt].len() - index[nxt]));
+                index[nxt] += idx_add;
                 num[nxt] += 1;
-                res_idx.push((nxt, index[nxt]));
+                idx.push((nxt, index[nxt]));
             }
         }
     }
@@ -135,12 +138,20 @@ impl Model {
     fn make_str(&self, idx: &[(usize, usize)], quiz: &[Vec<String>]) -> Vec<String> {
         let mut s = Vec::new();
         for &(i, j) in idx.iter() {
-            s.push(quiz[i][j].clone());
+            let q = quiz[i][j].clone();
+            if q == "?" || q == "でしょう" {
+                continue;
+            }
+            s.push(q);
         }
+        s.push("でしょう?".to_string());
         s
     }
 
-    pub fn main(&mut self, quiz: &[Vec<String>]) -> String {
+    pub fn main(&self, quiz: &[Vec<String>]) -> String {
+        if quiz.len() == 1 {
+            return quiz[0].join("")
+        }
         let mut generated = Vec::new();
         self.generate(quiz, &mut generated);
         generated.join("")
