@@ -86,14 +86,17 @@ impl Model {
     }
 
     pub fn generate(&self, quiz: &[Vec<String>], res: &mut Vec<String>) {
-        let mut rng = rand_pcg::Pcg64Mcg::new(time::Instant::now().elapsed().as_nanos());
+        let mut rng = rand_pcg::Mcg128Xsl64::new(time::Instant::now().elapsed().as_nanos());
         let now = time::Instant::now();
         let mut fvst = Vec::new();
         let limit_times = time::Duration::from_secs(3);
         let under_qoi = quiz.iter().map(|x| x.len()).sum::<usize>() / quiz.len() / 3;
+        // let mut x = 0;
         while now.elapsed() < limit_times {
             fvst.push(self.internal_gen(quiz, &mut rng, under_qoi));
+            // x += 1;
         }
+        // eprintln!("{}", x);
         fvst.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         for s in &fvst[0].1 {    
             res.push(s.clone());
