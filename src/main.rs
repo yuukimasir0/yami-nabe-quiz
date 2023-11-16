@@ -7,9 +7,9 @@ mod wakachi;
 use std::sync::Mutex;
 
 use calcprob::Model;
+use once_cell::sync::Lazy;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
-use once_cell::sync::Lazy;
 
 static MODEL: Lazy<Mutex<Model>> = Lazy::new(|| Mutex::new(Model::new()));
 
