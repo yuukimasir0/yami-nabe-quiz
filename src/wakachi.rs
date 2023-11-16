@@ -8,7 +8,7 @@ wget https://github.com/daac-tools/vibrato/releases/download/v0.5.0/ipadic-mecab
 tar xf ipadic-mecab-2_7_0.tar.xz
 */
 
-pub fn wakachi(text: &str) -> String {
+pub fn wakachi(text: &str) -> Vec<String> {
     
     let current_dir = env::current_dir().expect("Failed to get current directory");
     let dict_path = "ipadic-mecab-2_7_0/system.dic.zst";
@@ -32,7 +32,7 @@ pub fn wakachi(text: &str) -> String {
     let res = worker.token_iter()
         .map(|t| { // 出力
             t.surface().to_string()
-        }).collect::<Vec<_>>().join(" ");
+        }).collect::<Vec<_>>();
     
     res
 }

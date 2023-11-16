@@ -21,7 +21,7 @@ struct WakachiReq {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct WakachiRes {
-    result: String,
+    result: Vec<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -56,16 +56,21 @@ fn generate(request: Json<GenReq>) -> Json<GenRes> {
         .questions
         .iter()
         .map(|q| {
-            q.split_whitespace()
+            wakachi::wakachi(q)
+                .iter()
                 .map(String::from)
                 .collect::<Vec<String>>()
         })
         .collect::<Vec<Vec<String>>>();
 
+    //中身を出力
+    println!("{:?}", quiz);
     let response = GenRes {
         // ここにレスポンスのデータを設定
         result: MODEL.lock().unwrap().main(&quiz),
     };
+
+    println!("{:?}", response);
 
     Json(response)
 }
