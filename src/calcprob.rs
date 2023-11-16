@@ -24,6 +24,7 @@ impl Model {
         }
     }
 
+    #[inline]
     pub fn make(&mut self, filename: &str) -> io::Result<()> {
         let file = File::open(filename)?;
         let reader = BufReader::new(file);
@@ -45,6 +46,7 @@ impl Model {
         Ok(())
     }
 
+    #[inline(always)]
     pub fn prob_ft(&self, word: &[String]) -> f64 {
         let count = *self.counts.get(&(word[0].to_string(), word[1].to_string())).unwrap_or(&0);
         let r_star =
@@ -60,6 +62,7 @@ impl Model {
         }
     }
 
+    #[inline(always)]
     pub fn calc_entropy<F>(&self, sentence: &[String], prob: F) -> f64
     where
         F: Fn(&Self, &[String]) -> f64,
@@ -73,6 +76,7 @@ impl Model {
         entropy / num as f64
     }
 
+    #[inline(always)]
     pub fn calc_perplexity<F>(&self, sentence: &[String], prob: F) -> f64
     where
         F: Fn(&Self, &[String]) -> f64,
@@ -134,6 +138,7 @@ impl Model {
         }
     }
 
+    #[inline]
     fn make_str(&self, idx: &[(usize, usize)], quiz: &[Vec<String>]) -> Vec<String> {
         let mut s = Vec::new();
         for &(i, j) in idx.iter() {
