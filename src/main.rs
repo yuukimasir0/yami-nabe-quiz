@@ -10,8 +10,10 @@ use calcprob::Model;
 use once_cell::sync::Lazy;
 use rocket::serde::json::Json;
 use serde::{Deserialize, Serialize};
+use wakachi::Wakachi;
 
 static MODEL: Lazy<Mutex<Model>> = Lazy::new(|| Mutex::new(Model::new()));
+static WAKACHI: Lazy<Mutex<Wakachi>> = Lazy::new(|| Mutex::new(Wakachi::new()));
 
 // APIで受け取るデータの形式と返すデータの形式を規定
 #[derive(Debug, Serialize, Deserialize)]
@@ -40,7 +42,7 @@ fn your_handler(request: Json<WakachiReq>) -> Json<WakachiRes> {
     // リクエストを処理してレスポンスを生成するコードをここに書く
     let response = WakachiRes {
         // ここにレスポンスのデータを設定
-        result: wakachi::wakachi(&request.text),
+        result: WAKACHI.lock().unwrap().wakachi(&request.text),
     };
 
     Json(response)
@@ -56,7 +58,7 @@ fn generate(request: Json<GenReq>) -> Json<GenRes> {
         .questions
         .iter()
         .map(|q| {
-            wakachi::wakachi(q)
+            WAKACHI.lock().unwrap().wakachi(q)
                 .iter()
                 .map(String::from)
                 .collect::<Vec<String>>()
