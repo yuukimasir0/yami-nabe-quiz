@@ -87,7 +87,6 @@ impl Model {
         let mut fvst = Vec::new();
         let limit_times = time::Duration::from_secs(3);
         let under_qoi = quiz.iter().map(|x| x.len()).sum::<usize>() / quiz.len() / 3;
-        eprintln!("{}", under_qoi);
         while now.elapsed() < limit_times {
             fvst.push(self.internal_gen(quiz, &mut rng, under_qoi));
         }
@@ -101,7 +100,7 @@ impl Model {
     fn internal_gen(&self, quiz: &[Vec<String>], rng: &mut Mcg128Xsl64, under_qoi: usize) -> (f64, Vec<String>) {
         'gen: loop {
             let mut index = vec![0_usize; quiz.len()];
-            let mut idx = Vec::new();
+            let mut idx = Vec::with_capacity(under_qoi * (quiz.len() + 2));
             let mut num = vec![0_usize; quiz.len()];
             {
                 let first = rng.gen_range(0..quiz.len());
@@ -139,7 +138,7 @@ impl Model {
         let mut s = Vec::new();
         for &(i, j) in idx.iter() {
             let q = quiz[i][j].clone();
-            if q == "?" || q == "でしょう" {
+            if q == "?" || q == "でしょ" || q == "う" || q == "でしょう" {
                 continue;
             }
             s.push(q);

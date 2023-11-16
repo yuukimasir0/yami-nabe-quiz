@@ -17,7 +17,7 @@ impl Wakachi {
         let current_dir = env::current_dir().expect("Failed to get current directory");
         let dict_path = "ipadic-mecab-2_7_0/system.dic.zst";
         let dict_full_path = current_dir.join(dict_path);
-    
+        
         // 辞書ファイルのロード
         let reader = zstd::Decoder::new(File::open(dict_full_path).unwrap()).unwrap();
         let dict = Dictionary::read(reader).unwrap();
@@ -31,7 +31,7 @@ impl Wakachi {
     pub fn wakachi(&self, text: &str) -> Vec<String> {
         // ワーカーの初期化
         let mut worker = self.tokenizer.new_worker();
-    
+        
         worker.reset_sentence(text);
         worker.tokenize(); // 形態素解析の実行。mutable self
     

@@ -1,11 +1,8 @@
 #[macro_use]
 extern crate rocket;
-
 mod calcprob;
 mod wakachi;
-
 use std::sync::Mutex;
-
 use calcprob::Model;
 use once_cell::sync::Lazy;
 use rocket::serde::json::Json;
