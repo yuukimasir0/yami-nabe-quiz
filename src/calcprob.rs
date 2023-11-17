@@ -9,6 +9,11 @@ use std::{
 use rand::prelude::*;
 use rand_pcg::Mcg128Xsl64;
 
+use tokio::task;
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
+#[derive(Clone)]
 pub struct Model {
     counts: HashMap<(String, String), u32>,
     n: HashMap<u32, u32>,
@@ -84,19 +89,16 @@ impl Model {
         let entropy: f64 = self.calc_entropy(sentence, prob);
         entropy.exp2()
     }
-
-    pub fn generate(&self, quiz: &[Vec<String>], res: &mut Vec<String>) {
+    
+    fn generate(&self, quiz: &[Vec<String>], res: &mut Vec<String>) {
         let mut rng = rand_pcg::Mcg128Xsl64::new(time::Instant::now().elapsed().as_nanos());
         let now = time::Instant::now();
         let mut fvst = Vec::new();
         let limit_times = time::Duration::from_secs(3);
         let under_qoi = quiz.iter().map(|x| x.len()).sum::<usize>() / quiz.len() / 3;
-        // let mut x = 0;
         while now.elapsed() < limit_times {
             fvst.push(self.internal_gen(quiz, &mut rng, under_qoi));
-            // x += 1;
         }
-        // eprintln!("{}", x);
         fvst.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         for s in &fvst[0].1 {    
             res.push(s.clone());
@@ -155,12 +157,27 @@ impl Model {
         s
     }
 
-    pub fn main(&self, quiz: &[Vec<String>]) -> String {
-        if quiz.len() == 1 {
-            return quiz[0].join("")
+    pub async fn main(&self, quiz: &[Vec<String>], res: &mut String) {
+        if quiz.is_empty() {
+            *res = "0個の材料を混ぜることはできません!!".to_string();
         }
-        let mut generated = Vec::new();
-        self.generate(quiz, &mut generated);
-        generated.join("")
+        if quiz.len() == 1 {
+            *res = quiz[0].join("")
+        }
+        let result: Arc<Mutex<Vec<String>>> = Arc::new(Mutex::new(Vec::new()));
+
+        let model_ref = self.clone(); 
+        let quiz = quiz.to_owned(); 
+        let res_clone = result.clone();
+
+        async_std::task::spawn_blocking(move || {
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                let mut res_guard = res_clone.lock().await;
+                model_ref.generate(&quiz, &mut res_guard);
+            });
+        }).await;
+
+        let res_guard = result.lock().await;
+        *res = res_guard.clone().join("");
     }
 }

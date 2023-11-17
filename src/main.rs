@@ -2,15 +2,16 @@
 extern crate rocket;
 mod calcprob;
 mod wakachi;
-use std::sync::Mutex;
+use tokio::sync::Mutex;
+use std::sync::Arc;
 use calcprob::Model;
 use once_cell::sync::Lazy;
-use rocket::serde::json::Json;
+use rocket::{serde::json::Json, futures};
 use serde::{Deserialize, Serialize};
 use wakachi::Wakachi;
 
-static MODEL: Lazy<Mutex<Model>> = Lazy::new(|| Mutex::new(Model::new()));
-static WAKACHI: Lazy<Mutex<Wakachi>> = Lazy::new(|| Mutex::new(Wakachi::new()));
+// static MODEL: Lazy<Arc<Mutex<Model>>> = Lazy::new(|| Arc::new(Mutex::new(Model::new())));
+static WAKACHI: Lazy<Arc<Mutex<Wakachi>>> = Lazy::new(|| Arc::new(Mutex::new(Wakachi::new())));
 
 // APIで受け取るデータの形式と返すデータの形式を規定
 #[derive(Debug, Serialize, Deserialize)]
@@ -35,11 +36,11 @@ struct GenRes {
 
 //分かち書きAPI
 #[post("/wakachi", data = "<request>")]
-fn your_handler(request: Json<WakachiReq>) -> Json<WakachiRes> {
+async fn your_handler(request: Json<WakachiReq>) -> Json<WakachiRes> {
     // リクエストを処理してレスポンスを生成するコードをここに書く
     let response = WakachiRes {
         // ここにレスポンスのデータを設定
-        result: WAKACHI.lock().unwrap().wakachi(&request.text),
+        result: WAKACHI.lock().await.wakachi(&request.text),
     };
 
     Json(response)
@@ -47,36 +48,34 @@ fn your_handler(request: Json<WakachiReq>) -> Json<WakachiRes> {
 
 //闇鍋生成API
 #[post("/generate", data = "<request>")]
-fn generate(request: Json<GenReq>) -> Json<GenRes> {
-    // リクエストを処理してレスポンスを生成するコードをここに書く
+async fn generate(request: Json<GenReq>) -> Json<GenRes> {
+    let wakachi = Arc::clone(&WAKACHI);
+    let mut model = Model::new();
+    let _ = model.make("static/corpus.txt");
 
-    //Stringをスペース区切りでVecに変換
-    let quiz = request
-        .questions
-        .iter()
-        .map(|q| {
-            WAKACHI.lock().unwrap().wakachi(q)
+    let quiz_futures = request.questions.iter().map(|q| {
+        let wakachi_clone = Arc::clone(&wakachi);
+        async move {
+            let wakachi = wakachi_clone.lock().await;
+            wakachi.wakachi(q)
                 .iter()
                 .map(String::from)
                 .collect::<Vec<String>>()
-        })
-        .collect::<Vec<Vec<String>>>();
+        }
+    });
 
-    //中身を出力
+    let quiz: Vec<Vec<String>> = futures::future::join_all(quiz_futures).await.into_iter().collect();
     println!("{:?}", quiz);
-    let response = GenRes {
-        // ここにレスポンスのデータを設定
-        result: MODEL.lock().unwrap().main(&quiz),
-    };
-
-    println!("{:?}", response);
-
-    Json(response)
+    let mut result = String::new();
+    model.main(&quiz, &mut result).await;
+    println!("{:?}", result);
+    Json(GenRes { result })
+    
 }
 
 #[rocket::main]
 async fn main() {
-    let _ = MODEL.lock().unwrap().make("static/corpus.txt");
+    // let _ = MODEL.lock().await.make("static/corpus.txt");
     rocket::build()
         .mount("/", routes![your_handler, generate])
         .launch()
