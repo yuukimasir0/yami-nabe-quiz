@@ -94,12 +94,12 @@ impl Model {
         let mut rng = rand_pcg::Mcg128Xsl64::new(time::Instant::now().elapsed().as_nanos());
         let now = time::Instant::now();
         let mut fvst = Vec::new();
-        let limit_times = time::Duration::from_secs(3);
-        let under_qoi = quiz.iter().map(|x| x.len()).sum::<usize>() / quiz.len() / 3;
+        let limit_times = time::Duration::from_secs(2);
+        let under_qoi = quiz.iter().map(|x| x.len()).sum::<usize>() / quiz.len() / 3 * (quiz.len() + 2);
         while now.elapsed() < limit_times {
             fvst.push(self.internal_gen(quiz, &mut rng, under_qoi));
         }
-        fvst.sort_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
+        fvst.sort_unstable_by(|a, b| a.0.partial_cmp(&b.0).unwrap());
         for s in &fvst[0].1 {    
             res.push(s.clone());
         }
@@ -109,7 +109,7 @@ impl Model {
     fn internal_gen(&self, quiz: &[Vec<String>], rng: &mut Mcg128Xsl64, under_qoi: usize) -> (f64, Vec<String>) {
         'gen: loop {
             let mut index = vec![0_usize; quiz.len()];
-            let mut idx = Vec::with_capacity(under_qoi * (quiz.len() + 2));
+            let mut idx = Vec::with_capacity(under_qoi);
             let mut num = vec![0_usize; quiz.len()];
             {
                 let first = rng.gen_range(0..quiz.len());
@@ -122,12 +122,12 @@ impl Model {
                 if quiz[nxt].len() - index[nxt] < 3 {
                     idx.push((nxt, index[nxt]));
                     num[nxt] += 1;
-                    for x in num {
-                        if x < under_qoi {
+                    for (i, &x) in num.iter().enumerate() {
+                        if 3 * x < quiz[i].len() {
                             continue 'gen;
                         }
                     }
-                    if idx.len() > under_qoi * (quiz.len() + 2) {
+                    if idx.len() > under_qoi {
                         let s = self.make_str(&idx, quiz);
                         let p = self.calc_perplexity(&s, Self::prob_ft);
                         return (p, s);
@@ -170,12 +170,12 @@ impl Model {
         let quiz = quiz.to_owned(); 
         let res_clone = result.clone();
 
-        async_std::task::spawn_blocking(move || {
+        task::spawn_blocking(move || {
             tokio::runtime::Runtime::new().unwrap().block_on(async {
                 let mut res_guard = res_clone.lock().await;
                 model_ref.generate(&quiz, &mut res_guard);
             });
-        }).await;
+        }).await.unwrap();
 
         let res_guard = result.lock().await;
         *res = res_guard.clone().join("");
