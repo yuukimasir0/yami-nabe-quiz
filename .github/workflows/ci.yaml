@@ -15,6 +15,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install mold
+        run: sudo apt install -y mold
+
       - name: Install Rust toolchain
         run: rustup toolchain install stable
 
@@ -42,6 +45,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install mold
+        run: sudo apt install -y mold
+
       - name: Install Rust toolchain
         run: rustup toolchain install stable
 
@@ -68,6 +74,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install mold
+        run: sudo apt install -y mold
 
       - name: Install Rust toolchain
         run: rustup toolchain install stable
