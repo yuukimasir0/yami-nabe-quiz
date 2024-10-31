@@ -1727,6 +1727,8 @@ dependencies = [
  "smallvec",
  "sqlformat",
  "thiserror",
+ "tokio",
+ "tokio-stream",
  "tracing",
  "url",
 ]
@@ -1764,6 +1766,7 @@ dependencies = [
  "sqlx-postgres",
  "syn 2.0.85",
  "tempfile",
+ "tokio",
  "url",
 ]
 
@@ -1976,6 +1979,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "145f3413504347a2be84393cc8a7d2fb4d863b375909ea59f2158261aa258bbb"
 dependencies = [
  "backtrace",
+ "bytes",
  "libc",
  "mio",
  "pin-project-lite",

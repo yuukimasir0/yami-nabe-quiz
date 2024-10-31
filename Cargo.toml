@@ -33,7 +33,7 @@ uuid = "1.11.0"
 chrono = { version = "0.4.38", default-features = false }
 serde = { version = "1.0.210", default-features = false }
 secrecy = "0.10.3"
-sqlx = { version = "0.8.2", default-features = false, features = ["postgres"] }
+sqlx = { version = "0.8.2", default-features = false, features = ["runtime-tokio", "postgres"] }
 strum = { version = "0.26.3", features = ["derive"], default-features = false }
 thiserror = "1.0.64"
 tokio = { version = "1.40.0", features = ["rt-multi-thread", "signal"] }
