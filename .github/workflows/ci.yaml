@@ -1,0 +1,86 @@
+name: CI for backend
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths-ignore:
+      - "README.md"
+      - "frontend/**"
+
+jobs:
+  clippy:
+    name: Clippy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable
+
+      - name: Cache Cargo registry, index, and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-related tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-make
+
+      - name: Run cargo check
+        env:
+          CARGO_INCREMENTAL: 0
+        run: cargo check
+
+      - name: Run Clippy
+        env:
+          CARGO_INCREMENTAL: 0
+        run: cargo make clippy-ci -- -Dwarnings
+
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable
+
+      - name: Cache Cargo registry, index, and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-related tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: nextest,cargo-make
+
+      - name: Build
+        env:
+          CARGO_INCREMENTAL: 0
+        run: cargo make build
+
+      - name: Test
+        env:
+          CARGO_INCREMENTAL: 0
+        run: cargo make test-ci
+
+  fmt:
+    name: Format Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: rustup toolchain install stable
+
+      - name: Cache Cargo registry, index, and build artifacts
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-related tools
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cargo-make
+
+      - name: Rustfmt
+        env:
+          CARGO_INCREMENTAL: 0
+        run: cargo make fmt -- --check

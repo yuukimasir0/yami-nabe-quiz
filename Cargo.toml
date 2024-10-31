@@ -1,0 +1,70 @@
+[package]
+name = "rust-web-base"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[[bin]]
+name = "app"
+path = "src/bin/app.rs"
+
+[workspace]
+members = ["api", "kernel", "registry", "shared", "adapter"]
+
+[workspace.package]
+edition = "2021"
+publish = false
+license = "MIT"
+
+[workspace.dependencies]
+adapter = { path = "./adapter" }
+api = { path = "./api" }
+kernel = { path = "./kernel" }
+registry = { path = "./registry" }
+shared = { path = "./shared" }
+async-trait = "0.1.83"
+anyhow = { version = "1.0.89", default-features = false }
+axum = { version = "0.7.7", default-features = false }
+derive-new = { version = "0.7.0", default-features = false }
+utoipa = "4.1.0"
+utoipa-redoc = { version = "2.0.0", features = ["axum"] }
+uuid = "1.11.0"
+chrono = { version = "0.4.38", default-features = false }
+serde = { version = "1.0.210", default-features = false }
+secrecy = "0.10.3"
+sqlx = { version = "0.8.2", default-features = false, features = ["postgres"] }
+strum = { version = "0.26.3", features = ["derive"], default-features = false }
+thiserror = "1.0.64"
+tokio = { version = "1.40.0", features = ["rt-multi-thread", "signal"] }
+mockall = "0.13.0"
+redis = { version = "0.27.5", features = ["tokio-rustls"], default-features = false }
+bcrypt = { version = "0.15.1", features = ["std"], default-features = false }
+itertools = "0.13.0"
+tower = "0.5.1"
+tracing = { version = "0.1.40", default-features = false }
+axum-extra = { version = "0.9.4", default-features = false }
+tokio-stream = { version = "0.1.16", default-features = false }
+garde = "0.20.0"
+
+[dependencies]
+tower-http = { version = "0.6.1", features = ["cors", "trace"] }
+thiserror.workspace = true
+adapter.workspace = true
+api.workspace = true
+registry.workspace = true
+shared.workspace = true
+anyhow.workspace = true
+axum.workspace = true
+utoipa.workspace = true
+utoipa-redoc.workspace = true
+tokio.workspace = true
+tracing.workspace = true
+tracing-subscriber = { version = "0.3.18", features = ["env-filter", "fmt"], default-features = false }
+opentelemetry = { version = "0.21.0", default-features = false }
+tracing-opentelemetry = { version = "0.22.0", default-features = false }
+opentelemetry-jaeger = "0.20.0"
+opentelemetry_sdk = { version = "0.21.2", default-features = false }
+
+[profile.dev.package.sqlx-macros]
+opt-level = 3
