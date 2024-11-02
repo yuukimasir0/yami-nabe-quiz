@@ -26,14 +26,14 @@ shared = { path = "./shared" }
 async-trait = "0.1.83"
 anyhow = { version = "1.0.89", default-features = false }
 axum = { version = "0.7.7", default-features = false }
-derive-new = { version = "0.7.0", default-features = false }
+derive-new = { version = "0.7.0" }
 utoipa = "4.1.0"
 utoipa-redoc = { version = "2.0.0", features = ["axum"] }
-uuid = "1.11.0"
+uuid = {version = "1.11.0", features = ["v4", "serde"]}
 chrono = { version = "0.4.38", default-features = false }
 serde = { version = "1.0.210", default-features = false }
 secrecy = "0.10.3"
-sqlx = { version = "0.8.2", default-features = false, features = ["runtime-tokio", "postgres"] }
+sqlx = { version = "0.8.2", default-features = false, features = ["runtime-tokio", "postgres", "derive", "uuid"] }
 strum = { version = "0.26.3", features = ["derive"], default-features = false }
 thiserror = "1.0.64"
 tokio = { version = "1.40.0", features = ["rt-multi-thread", "signal"] }
