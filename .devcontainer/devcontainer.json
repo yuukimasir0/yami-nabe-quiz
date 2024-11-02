@@ -23,7 +23,7 @@
 	// "forwardPorts": [],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "apt update && apt install mold -y && cargo install --locked cargo-make",
+	"postCreateCommand": "apt update && apt install -y jq && apt install mold -y && cargo install --locked cargo-make",
 
 	// Configure tool-specific properties.
 	// "customizations": {},
